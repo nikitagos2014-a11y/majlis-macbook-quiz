@@ -71,6 +71,51 @@ body:has(#start.on) .bar{visibility:hidden}
 #start{width:100%;max-width:400px;margin-inline:auto}
 @media (max-height:700px){.tick{display:none}.mac{margin:10px 26px 0}.go{padding-top:12px}}
 @media (max-height:600px){.mac{margin:6px 44px 0}.poster{margin-top:4px}}
+
+/* Итог: товар на чистом поле, потом название, цена, таблица; второй вариант компактной строкой, кнопка всегда под рукой */
+#edit{display:none;font-size:14px}
+body:has(#result.on) #edit{display:block}
+body:has(#result.on) .bar,body:has(#finding.on) .step{display:none}
+#result{margin-bottom:calc(-24px - env(safe-area-inset-bottom))}
+#r-main{display:flex;flex-direction:column}
+.band{position:relative;isolation:isolate;margin:10px -20px 0;padding:14px 20px 16px;background:var(--panel);display:flex;flex-direction:column}
+.band .tag{align-self:flex-start;max-width:100%;font:600 13px/1.3 Onest,sans-serif;color:var(--blue);animation:up .4s var(--ease) both}
+.band .tag.warn{color:var(--on-white)}
+.band .pic{display:flex;justify-content:center;align-items:center;margin:14px -8px 10px;height:clamp(190px,58vw,320px);animation:lift .6s var(--ease) both}
+.band .pic{mix-blend-mode:multiply}.band .pic img{display:block;width:auto;height:100%;max-width:100%;object-fit:contain;transition:opacity .16s ease-out}
+@keyframes lift{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:none}}
+.band .sw{display:flex;align-items:center;gap:12px;margin:0;flex-wrap:nowrap}
+.band .sw button{min-width:0;padding:4px;display:block}
+.band .sw i{width:22px;height:22px}
+.sw-name{margin-left:4px;font-size:14px;font-weight:500;color:var(--muted)}
+.info{display:flex;flex-direction:column;padding-top:20px}
+.info .name{margin:0;font-size:clamp(26px,7.6vw,36px);line-height:1.02;animation:up .4s var(--ease) .04s both}
+.info .price{margin-top:10px;font-size:clamp(34px,10vw,46px);animation:up .4s var(--ease) .08s both}
+.info .price.ask{font-size:clamp(21px,5.6vw,26px)}
+.info .note{margin-top:8px;animation:up .4s var(--ease) .12s both}
+.rows{margin-top:18px;border-top:1px solid var(--line)}
+.r{display:flex;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--line);font-size:15px;line-height:1.3}
+.r dt{color:var(--muted)}.r dd{font-weight:600;text-align:right}
+.info .eta{margin-top:0;padding:14px 0;background:none;border-radius:0;border-bottom:1px solid var(--line)}
+.info details{margin-top:0;border-top:0;border-bottom:1px solid var(--line);padding:14px 0}
+.info summary{font-size:15px}
+.why-l{list-style:none;margin-top:10px;display:flex;flex-direction:column;gap:8px;font-size:15px;line-height:1.4;color:var(--on-white)}
+.info .cfgs{margin-top:12px}
+.site{align-self:flex-start;margin-top:16px}
+.alt-row{display:flex;align-items:center;gap:12px;width:100%;margin-top:24px;padding:12px;text-align:left;background:var(--panel);border:0;border-radius:16px;cursor:pointer;transition:transform .16s var(--ease)}
+.alt-row:active{transform:scale(.985)}
+.alt-row{isolation:isolate}.alt-pic{flex:none;width:68px;height:44px;display:flex;align-items:center;justify-content:center;mix-blend-mode:multiply}
+.alt-pic img{max-width:100%;max-height:100%}
+.alt-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;font-size:13px;line-height:1.3;color:var(--muted)}
+.alt-t small{font:600 12px/1.3 Onest,sans-serif;color:var(--blue)}
+.alt-t b{font:600 15px/1.25 Onest,sans-serif;color:var(--on-white)}
+.alt-p{flex:none;font:600 14px/1.2 Onest,sans-serif;white-space:nowrap;font-variant-numeric:tabular-nums}
+#result .foot{margin-top:0;padding:20px 0 16px}
+.r-bar{position:sticky;bottom:0;z-index:4;margin:auto -20px 0;padding:12px 20px calc(12px + env(safe-area-inset-bottom));background:var(--white);border-top:1px solid var(--line);display:flex;align-items:center;gap:14px;animation:slideup .4s var(--ease) .1s both}
+@keyframes slideup{from{transform:translateY(100%)}to{transform:none}}
+#r-bar-price{flex:none;font:600 15px/1.2 Onest,sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap}
+#r-bar-price:empty{display:none}
+.r-bar .btn{flex:1;min-height:50px;width:auto;padding:0 12px}
 /* Микроанимации */
 .w{display:inline-block;white-space:pre;animation:up .38s var(--ease) both;animation-delay:calc(var(--i)*26ms)}
 @keyframes up{from{opacity:0;transform:translateY(.45em)}to{opacity:1;transform:none}}
@@ -80,9 +125,7 @@ body:has(#start.on) .bar{visibility:hidden}
 .ck{flex:none;width:22px;height:22px;border-radius:50%;background:var(--blue);color:var(--white);display:flex;align-items:center;justify-content:center;transform:scale(0.6);opacity:0;transition:transform .2s var(--ease),opacity .12s}
 .ck svg{width:14px;height:14px;stroke-width:3;color:var(--white)}
 .opt.on .ck{transform:none;opacity:1}.opt.on .ck svg{color:var(--white)}
-.card{animation:rise .46s var(--ease) both}.card+.card{animation-delay:90ms}
-.r-head h2,.r-sub{animation:up .4s var(--ease) both}.r-sub{animation-delay:60ms}
-.pic img{transition:opacity .16s ease-out}.pic img.swap{opacity:0}
+.pic img.swap{opacity:0}
 .sw i{transition:transform .16s var(--ease)}.sw button:active i{transform:scale(.88)}.sw button.on i{transform:scale(1.04)}
 .cfg{transition:border-color .16s,box-shadow .16s,transform .16s var(--ease)}.cfg:active{transform:scale(.985)}
 .roll{display:inline-block;color:var(--blue)}
@@ -152,7 +195,7 @@ details[open] summary::after{transform:rotate(-135deg) translate(-2px,-2px)}
 </head>
 <body>
 <div class="top"><div class="top-in">
-  <div class="row"><a class="logo" href="https://t.me/majlis_usa" aria-label="MAJLIS"><img src="img/logo.png" alt="majlis" width="806" height="298"></a><span class="step" id="step" aria-live="polite"></span></div>
+  <div class="row"><a class="logo" href="https://t.me/majlis_usa" aria-label="MAJLIS"><img src="img/logo.png" alt="majlis" width="806" height="298"></a><span class="step" id="step" aria-live="polite"></span><button class="linkb" id="edit">Изменить ответы</button></div>
   <div class="bar" aria-hidden="true"><i id="bar"></i></div>
 </div></div>
 <div class="wrap">
@@ -185,10 +228,9 @@ details[open] summary::after{transform:rotate(-135deg) translate(-2px,-2px)}
 <section class="screen" id="finding"><div class="finding"><p>Сверяем<br><span class="roll" id="roll">память</span></p></div></section>
 
 <section class="screen" id="result">
-  <div class="r-head"><h2 id="r-title" tabindex="-1"></h2><p class="r-sub"><span id="r-sub"></span> <button class="linkb" id="edit">Изменить ответы</button></p></div>
-  <div class="cards" id="cards"></div>
-  <div class="more"><a class="btn ghost" href="https://majlis-agency.ru/catalog" target="_blank" rel="noopener">Все MacBook на сайте</a></div>
+  <div id="r-main"></div>
   <p class="foot" id="r-foot"></p>
+  <div class="r-bar"><b id="r-bar-price"></b><a class="btn cta" target="_blank" rel="noopener">Написать менеджеру</a></div>
 </section>
 </div>
 
@@ -412,46 +454,55 @@ function finish() {
   words.forEach((w, i) => setTimeout(() => { const r = $('roll'); r.textContent = w; r.classList.remove('w'); void r.offsetWidth; r.classList.add('w'); r.style.setProperty('--i', 0); }, i * 190));
   setTimeout(renderResult, words.length * 190 + 60);
 }
-function card(c, tag, warn, a, n, primary) {
-  const el = document.createElement('article'); el.className = 'card';
+let view = null;
+function renderResult() {
+  const r = pick(answers);
+  view = { main: { c: r.top, tag: r.topTag, warn: r.topWarn }, other: r.alt ? { c: r.alt, tag: r.altTag } : null, n: r.n, budget: r.budget };
+  drawResult(); show('result');
+}
+const specRows = c => c.touch ? [['Экран', 'PROLED XDR, сенсорный'], ['Размер', '14 или 16 дюймов'], ['Чип', 'M5 Pro или M5 Max']] : [['Чип', c.chip], ['Память', c.ram + ' ГБ'], ['Накопитель', gb(c.ssd)]];
+function drawResult() {
+  const { main, other, n, budget } = view, c = main.c, a = answers, box = $('r-main');
   const family = c.touch ? [] : CONFIGS.filter(x => x.m === c.m);
   let cur = c, color = c.colors ? c.colors[0] : null;
+  const row = ([l, v], i) => `<div class="r" style="--i:${i}"><dt>${esc(l)}</dt><dd>${esc(v)}</dd></div>`;
+  box.innerHTML = `<div class="band"><p class="tag${main.warn ? ' warn' : ''}">${esc(main.tag)}</p>
+  <div class="pic"><img alt=""></div>
+  ${c.colors ? `<div class="sw" role="group" aria-label="Цвет">${c.colors.map(([k, t, h]) => `<button type="button" data-c="${k}" aria-label="${esc(t)}"><i style="background:${h}"></i></button>`).join('')}<span class="sw-name"></span></div>` : ''}</div>
+<div class="info">
+  <h2 class="name" id="r-title" tabindex="-1">${esc(c.name)}</h2>
+  <p class="price"></p><p class="note"></p>
+  <dl class="rows"></dl>
+  ${c.touch ? '' : `<div class="eta"><span>Если заказать сегодня</span><b>В Москве примерно к ${esc(etaText())}</b><small>Это ${DELIVERY_WORKDAYS} рабочих дней, дальше СДЭК до вашего города. Точную дату назовёт менеджер.</small></div>`}
+  ${family.length > 1 ? `<details><summary>Другая память и накопитель</summary><div class="cfgs">${family.map(f => `<button type="button" class="cfg"><span>${f.ram} ГБ / ${gb(f.ssd)}</span><b>${f.price != null ? rub(f.price) : 'у менеджера'}</b></button>`).join('')}</div></details>` : ''}
+  <details open><summary>Почему подходит</summary><ul class="why-l">${reasons(c, a, n).map(r => `<li>${esc(r)}</li>`).join('')}</ul></details>
+  ${c.slug ? `<a class="site" href="${SITE}${c.slug}" target="_blank" rel="noopener">Посмотреть на сайте</a>` : ''}
+  ${other ? `<button type="button" class="alt-row"><span class="alt-pic"><img src="img/${other.c.pic}${other.c.colors ? '-' + other.c.colors[0][0] : ''}.jpg" alt=""></span><span class="alt-t"><small>${esc(other.tag)}</small><b>${esc(other.c.name)}</b><span>${other.c.touch ? 'Сенсорный экран' : `${esc(other.c.chip)}, ${other.c.ram} ГБ, ${gb(other.c.ssd)}`}</span></span><b class="alt-p">${other.c.price != null ? rub(other.c.price) : 'у менеджера'}</b></button>` : ''}
+</div>`;
   const paint = () => {
     const priced = cur.price != null;
-    const specLine = cur.touch ? '14 или 16 дюймов · M5 Pro или M5 Max' : `${cur.chip} · ${cur.ram} ГБ памяти · ${gb(cur.ssd)}`;
-    el.querySelector('.spec').textContent = specLine;
-    const p = el.querySelector('.price'); p.classList.toggle('ask', !priced); if (priced) tween(p, cur.price); else { cancelAnimationFrame(p._raf); p._v = null; p.textContent = 'Цену назовёт менеджер'; }
-    el.querySelector('.note').textContent = cur.touch ? 'На сайте его пока нет, цену в рублях назовём на день заказа.' : priced ? `Цена с сайта на ${DATE}, пошлина в цене.` : 'Напишите менеджеру, он назовёт цену на день заказа.';
-    const img = el.querySelector('.pic img'), src = `img/${c.pic}${color ? '-' + color[0] : ''}.jpg`;
+    box.querySelector('.rows').innerHTML = specRows(cur).map(row).join('');
+    const p = box.querySelector('.price'); p.classList.toggle('ask', !priced);
+    if (priced) tween(p, cur.price); else { cancelAnimationFrame(p._raf); p._v = null; p.textContent = 'Цену назовёт менеджер'; }
+    const lim = budget === Infinity ? '' : `Бюджет до ${rub(budget)}. `;
+    box.querySelector('.note').textContent = c.touch ? 'В США от 2899 $, продажи с 6.11.2026. На сайте его пока нет, цену в рублях назовём на день заказа.' : priced ? `${lim}Цена с сайта на ${DATE}, пошлина в цене.` : 'Напишите менеджеру, он назовёт цену на день заказа.';
+    const img = box.querySelector('.pic img'), src = `img/${c.pic}${color ? '-' + color[0] : ''}.jpg`;
     if (img.getAttribute('src') !== src) { const pre = new Image(); img.classList.add('swap'); pre.onload = pre.onerror = () => { img.src = src; img.classList.remove('swap'); }; pre.src = src; }
     img.alt = c.name + (color ? ', ' + color[1] : '');
-    const line = `${c.name}, ${cur.touch ? 'сенсорный экран' : specLine.replace(/ · /g, ', ')}${color ? ', ' + color[1] : ''}${priced ? ', ' + rub(cur.price) : ''}`;
-    el.querySelector('.cta').href = `https://t.me/${MANAGER}?text=${encodeURIComponent('Здравствуйте. Подбор из теста: ' + line + '.')}`;
-    el.querySelectorAll('.cfg').forEach((b, i) => { const on = family[i] === cur; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
-    el.querySelectorAll('.sw button').forEach(b => { const on = color && b.dataset.c === color[0]; b.classList.toggle('on', on); b.setAttribute('aria-pressed', !!on); });
+    const spec = cur.touch ? 'сенсорный экран' : `${cur.chip}, ${cur.ram} ГБ памяти, ${gb(cur.ssd)}`;
+    const line = `${c.name}, ${spec}${color ? ', ' + color[1] : ''}${priced ? ', ' + rub(cur.price) : ''}`;
+    document.querySelector('.r-bar .cta').href = `https://t.me/${MANAGER}?text=${encodeURIComponent('Здравствуйте. Подбор из теста: ' + line + '.')}`;
+    $('r-bar-price').textContent = priced ? rub(cur.price) : '';
+    box.querySelectorAll('.cfg').forEach((b, i) => { const on = family[i] === cur; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+    box.querySelectorAll('.sw button').forEach(b => { const on = color && b.dataset.c === color[0]; b.classList.toggle('on', on); b.setAttribute('aria-pressed', !!on); });
+    if (color) box.querySelector('.sw-name').textContent = color[1];
   };
-  const list = reasons(c, a, n).map(r => `<li>${esc(r)}</li>`).join('');
-  el.innerHTML = `<p class="tag${warn ? ' warn' : ''}">${esc(tag)}</p><p class="name">${esc(c.name)}</p><p class="spec"></p><p class="price"></p><p class="note"></p>
-${c.touch ? '' : `<div class="eta"><span>Если заказать сегодня</span><b>В Москве примерно к ${esc(etaText())}</b><small>Это ${DELIVERY_WORKDAYS} рабочих дней. Дальше СДЭК до вашего города. Точную дату назовёт менеджер.</small></div>`}
-<div class="pic"><img alt="" width="520" height="316"></div>
-${c.colors ? `<div class="cols"><span>Цвет</span><div class="sw">${c.colors.map(([k, t, h]) => `<button type="button" data-c="${k}"><i style="background:${h}"></i>${t}</button>`).join('')}</div></div>` : ''}
-<div class="acts"><a class="btn cta${primary ? '' : ' ghost'}" target="_blank" rel="noopener">Написать менеджеру</a>${c.slug ? `<a class="site" href="${SITE}${c.slug}" target="_blank" rel="noopener">Посмотреть на сайте</a>` : ''}</div>
-${primary ? `<div class="why"><span>Почему подходит</span><ul>${list}</ul></div>` : `<details><summary>Почему подходит</summary><div class="why flat"><ul>${list}</ul></div></details>`}
-${family.length > 1 ? `<details><summary>Другая память и накопитель</summary><div class="cfgs">${family.map(f => `<button type="button" class="cfg"><span>${f.ram} ГБ / ${gb(f.ssd)}</span><b>${f.price != null ? rub(f.price) : 'у менеджера'}</b></button>`).join('')}</div></details>` : ''}`;
-  el.querySelectorAll('.cfg').forEach((b, i) => { b.onclick = () => { cur = family[i]; paint(); }; });
-  el.querySelectorAll('.sw button').forEach(b => { b.onclick = () => { color = c.colors.find(x => x[0] === b.dataset.c); paint(); }; });
-  paint();
-  return el;
-}
-function renderResult() {
-  const r = pick(answers), a = answers;
-  $('r-title').innerHTML = r.alt ? 'Два варианта. <span>Под ваши задачи.</span>' : 'Ваш вариант. <span>Под ваши задачи.</span>';
-  $('r-sub').textContent = r.budget === Infinity ? 'Бюджет не указан.' : `В бюджете до ${rub(r.budget)}.`;
-  const box = $('cards'); box.innerHTML = '';
-  box.appendChild(card(r.top, r.topTag, r.topWarn, a, r.n, true));
-  if (r.alt) box.appendChild(card(r.alt, r.altTag, false, a, r.n, false));
+  box.querySelectorAll('.cfg').forEach((b, i) => { b.onclick = () => { cur = family[i]; paint(); }; });
+  box.querySelectorAll('.sw button').forEach(b => { b.onclick = () => { color = c.colors.find(x => x[0] === b.dataset.c); paint(); }; });
+  const alt = box.querySelector('.alt-row');
+  if (alt) alt.onclick = () => { view.main = other; view.other = main; drawResult(); window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion:reduce)').matches ? 'auto' : 'smooth' }); };
   $('r-foot').textContent = 'Пошлина уже в цене, гарантия 12 месяцев. Менеджер один от запроса до получения. Кофе и зал: Иваново, Зверева, 8, 1 этаж, 107.';
-  show('result');
+  paint();
 }
 function fitPoster() {
   const box = document.querySelector('.poster').clientWidth;
