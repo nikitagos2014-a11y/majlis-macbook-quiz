@@ -116,6 +116,19 @@ body:has(#result.on) .bar,body:has(#finding.on) .step{display:none}
 #r-bar-price{flex:none;font:600 15px/1.2 Onest,sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap}
 #r-bar-price:empty{display:none}
 .r-bar .btn{flex:1;min-height:50px;width:auto;padding:0 12px}
+/* Качество: зоны нажатия от 44 px, видимый фокус, поясняющие строки */
+:where(button,a,summary):focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:8px}
+.band .sw{gap:0;margin-left:-11px}.band .sw button{padding:11px}
+.sw-name{margin-left:2px}
+#edit{min-height:44px;padding:0 0 0 12px}
+.info summary{min-height:44px}.info details{padding:2px 0 2px}.info details[open]{padding-bottom:14px}
+.why-l{margin-top:14px;gap:6px}.why-l li{position:relative;padding-left:16px;animation:up .4s var(--ease) .14s both}
+.why-l li::before{content:"";position:absolute;left:0;top:.56em;width:6px;height:6px;border-radius:50%;background:var(--blue)}
+.eta-n{padding:10px 0 14px;font-size:13px;line-height:1.4;color:var(--muted);border-bottom:1px solid var(--line)}
+.cfg{min-height:44px}.cfg em{display:inline-block;margin-left:8px;font:600 12px/1 Onest,sans-serif;font-style:normal;color:var(--blue)}
+.alt-go{flex:none;width:18px;height:18px;color:var(--muted);margin-left:-4px}
+.site{min-height:44px;display:inline-flex;align-items:center;margin-top:6px}
+.foot a{color:var(--blue)}
 /* Микроанимации */
 .w{display:inline-block;white-space:pre;animation:up .38s var(--ease) both;animation-delay:calc(var(--i)*26ms)}
 @keyframes up{from{opacity:0;transform:translateY(.45em)}to{opacity:1;transform:none}}
@@ -306,7 +319,7 @@ const Q = [
     ['short', 'На 2–3 года', 'Хватит того, что нужно сейчас'],
     ['long', 'На 5 лет и больше', 'Возьмём больше памяти, её не добавить потом'] ] },
   { id: 'budget', q: 'Напоследок: какой у вас бюджет?', skip: 'none', skipText: 'Пока не знаю', a: [
-    ['b60', 'До 60 000 ₽'], ['b100', 'До 100 000 ₽'], ['b130', 'До 130 000 ₽'], ['b160', 'До 160 000 ₽'], ['b200', 'До 200 000 ₽'], ['b350', 'До 350 000 ₽'] ] },
+    ['b60', 'До 60 000 ₽', 'MacBook Neo'], ['b100', 'До 100 000 ₽', 'Neo и Air 13'], ['b130', 'До 130 000 ₽', 'Ещё Air 15 и Pro 14 на M5'], ['b160', 'До 160 000 ₽', 'Ещё Pro 14 на M5 Pro'], ['b200', 'До 200 000 ₽', 'Pro 14 с 48 ГБ памяти'], ['b350', 'До 350 000 ₽', 'Вся линейка, включая M5 Max'] ] },
 ];
 
 const rub = n => n.toLocaleString('ru-RU') + ' ₽';
@@ -383,17 +396,21 @@ function diff(c, top) {
 }
 // Почему подходит: только то, что следует из ответов
 function reasons(c, a, n) {
-  if (c.touch) return ['Вы выбрали сенсорный экран: пока он есть только в этом MacBook Pro.', 'Экран PROLED XDR, 14 или 16 дюймов.', 'В США от 2899 $, продажи с 6.11.2026.'];
-  const out = [], tasks = n.tasks.map(t => t.why);
-  if (tasks.length) out.push(`${c.chip} и ${c.ram} ГБ памяти хватит на ${tasks.slice(0, 3).join(', ')}.`);
+  if (c.touch) return ['Вы выбрали сенсорный экран: пока он есть только в этом MacBook Pro.', 'Экран PROLED XDR, 14 или 16 дюймов.'];
+  const out = [], tasks = n.tasks.map(t => t.why), ok = fits(c, n);
+  const list = tasks.length > 1 ? `${tasks.slice(0, 2).join(', ')} и ${tasks[2] || ''}`.replace(/ и $/, '').replace(/, ([^,]+)$/, ' и $1') : tasks[0];
+  if (!ok) {
+    const want = [c.ram < n.ram ? `от ${n.ram} ГБ памяти` : '', c.ssd < n.ssd ? `от ${gb(n.ssd)} места` : '', c.tier < n.tier ? 'чип мощнее' : ''].filter(Boolean).join(' и ');
+    out.push(`Для ваших задач лучше ${want}.`);
+  } else if (tasks.length) out.push(`${c.chip} и ${c.ram} ГБ памяти хватит на ${list}.`);
   else if (c.m === 'neo') out.push('Для браузера, фильмов и документов мощности хватает, переплачивать незачем.');
   else out.push(`${c.chip} и ${c.ram} ГБ памяти хватит на браузер, фильмы и документы с запасом.`);
-  if (a.years === 'long') out.push(`Памяти ${c.ram} ГБ с запасом на годы: потом её не добавить.`);
-  if (a.place === 'carry' || a.place === 'trips') out.push(c.size <= 14 ? `${c.size} дюймов удобно брать с собой.` : 'Экран большой, но ноутбук всё ещё можно носить.');
+  if (a.years === 'long' && ok) out.push(`Память с запасом на годы: потом её не добавить.`);
+  if (a.place === 'carry' || a.place === 'trips') { if (c.size <= 14) out.push(`${c.size} дюймов удобно брать с собой.`); }
   else if (a.screen === 'big' && c.size >= 15) out.push(`${c.size} дюймов: два окна рядом без тесноты.`);
   else if (a.screen === 'best' && c.tier >= 2) out.push('Экран класса Pro: ярче и точнее по цвету.');
-  if (a.files === 'l' || a.files === 'xl' || c.ssd >= 1000) out.push(`${gb(c.ssd)} вмещают ваши файлы без внешнего диска.`);
-  if (c.tier === 1 && !out.some(s => /вентилятор/.test(s)) && out.length < 3) out.push('Без вентилятора, работает бесшумно.');
+  if (out.length < 3 && (a.files === 'l' || a.files === 'xl') && c.ssd >= n.ssd) out.push(`${gb(c.ssd)} вмещают ваши файлы без внешнего диска.`);
+  if (out.length < 2 && c.tier === 1) out.push('Без вентилятора, работает бесшумно.');
   return out.slice(0, 3);
 }
 
@@ -427,7 +444,7 @@ function render() {
   const multi = !!q.multi, ready = multi && (cur || []).length > 0;
   $('ok').parentElement.style.display = multi ? '' : 'none';
   $('ok').disabled = !ready; $('ok').textContent = ready ? 'Дальше' : 'Выберите хотя бы один';
-  show('quiz'); progress();
+  show('quiz'); progress(); $('q').focus({ preventScroll: true });
 }
 function choose(q, k, el) {
   if (q.multi) {
@@ -458,12 +475,12 @@ let view = null;
 function renderResult() {
   const r = pick(answers);
   view = { main: { c: r.top, tag: r.topTag, warn: r.topWarn }, other: r.alt ? { c: r.alt, tag: r.altTag } : null, n: r.n, budget: r.budget };
-  drawResult(); show('result');
+  drawResult(); show('result'); $('r-title').focus({ preventScroll: true });
 }
 const specRows = c => c.touch ? [['Экран', 'PROLED XDR, сенсорный'], ['Размер', '14 или 16 дюймов'], ['Чип', 'M5 Pro или M5 Max']] : [['Чип', c.chip], ['Память', c.ram + ' ГБ'], ['Накопитель', gb(c.ssd)]];
 function drawResult() {
   const { main, other, n, budget } = view, c = main.c, a = answers, box = $('r-main');
-  const family = c.touch ? [] : CONFIGS.filter(x => x.m === c.m);
+  const family = c.touch ? [] : CONFIGS.filter(x => x.name === c.name);
   let cur = c, color = c.colors ? c.colors[0] : null;
   // Все цвета заранее, чтобы смена цвета была мгновенной
   (c.colors || []).forEach(([k]) => { new Image().src = `img/${c.pic}-${k}.jpg`; });
@@ -474,20 +491,24 @@ function drawResult() {
 <div class="info">
   <h2 class="name" id="r-title" tabindex="-1">${esc(c.name)}</h2>
   <p class="price"></p><p class="note"></p>
+  <ul class="why-l"></ul>
   <dl class="rows"></dl>
-  ${c.touch ? '' : `<div class="eta"><span>Если заказать сегодня</span><b>В Москве примерно к ${esc(etaText())}</b><small>Это ${DELIVERY_WORKDAYS} рабочих дней, дальше СДЭК до вашего города. Точную дату назовёт менеджер.</small></div>`}
-  ${family.length > 1 ? `<details><summary>Другая память и накопитель</summary><div class="cfgs">${family.map(f => `<button type="button" class="cfg"><span>${f.ram} ГБ / ${gb(f.ssd)}</span><b>${f.price != null ? rub(f.price) : 'у менеджера'}</b></button>`).join('')}</div></details>` : ''}
-  <details open><summary>Почему подходит</summary><ul class="why-l">${reasons(c, a, n).map(r => `<li>${esc(r)}</li>`).join('')}</ul></details>
-  ${c.slug ? `<a class="site" href="${SITE}${c.slug}" target="_blank" rel="noopener">Посмотреть на сайте</a>` : ''}
-  ${other ? `<button type="button" class="alt-row"><span class="alt-pic"><img src="img/${other.c.pic}${other.c.colors ? '-' + other.c.colors[0][0] : ''}.jpg" alt=""></span><span class="alt-t"><small>${esc(other.tag)}</small><b>${esc(other.c.name)}</b><span>${other.c.touch ? 'Сенсорный экран' : `${esc(other.c.chip)}, ${other.c.ram} ГБ, ${gb(other.c.ssd)}`}</span></span><b class="alt-p">${other.c.price != null ? rub(other.c.price) : 'у менеджера'}</b></button>` : ''}
+  ${c.touch ? '' : `<p class="eta-n">Если заказать сегодня: ${DELIVERY_WORKDAYS} рабочих дней до Москвы, дальше СДЭК до вашего города. Точную дату назовёт менеджер.</p>`}
+  ${family.length > 1 ? `<details><summary>Другая память и накопитель</summary><div class="cfgs">${family.map(f => `<button type="button" class="cfg"><span>${family.some(x => x.chip !== f.chip) ? esc(f.chip) + ' · ' : ''}${f.ram} ГБ / ${gb(f.ssd)}${f === c ? '<em>Рекомендуем</em>' : ''}</span><b>${f.price != null ? rub(f.price) : 'у менеджера'}</b></button>`).join('')}</div></details>` : ''}
+  ${c.slug ? `<a class="site" target="_blank" rel="noopener">Посмотреть на сайте</a>` : ''}
+  ${other ? `<button type="button" class="alt-row"><span class="alt-pic"><img src="img/${other.c.pic}${other.c.colors ? '-' + other.c.colors[0][0] : ''}.jpg" alt=""></span><span class="alt-t"><small>${esc(other.tag)}</small><b>${esc(other.c.name)}</b><span>${other.c.touch ? 'Сенсорный экран' : `${esc(other.c.chip)}, ${other.c.ram} ГБ, ${gb(other.c.ssd)}`}</span></span><b class="alt-p">${other.c.price != null ? rub(other.c.price) : 'у менеджера'}</b><svg class="alt-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>` : ''}
 </div>`;
   const paint = () => {
     const priced = cur.price != null;
-    box.querySelector('.rows').innerHTML = specRows(cur).map(row).join('');
+    const eta = cur.touch ? [] : [['В Москве', 'примерно к ' + etaText()]];
+    box.querySelector('.rows').innerHTML = [...specRows(cur), ['Гарантия', '12 месяцев'], ...(cur.touch ? [] : [['Пошлина', 'уже в цене']]), ...eta].map(row).join('');
+    box.querySelector('.why-l').innerHTML = reasons(cur, a, n).map(r => `<li>${esc(r)}</li>`).join('');
+    const tag = box.querySelector('.band .tag'), under = !cur.touch && !fits(cur, n); tag.textContent = cur === c ? main.tag : under ? 'Ваш выбор, памяти или места мало для задач' : 'Ваш выбор'; tag.classList.toggle('warn', cur === c ? !!main.warn : under);
+    const site = box.querySelector('.site'); if (site && cur.slug) site.href = SITE + cur.slug;
     const p = box.querySelector('.price'); p.classList.toggle('ask', !priced);
     if (priced) tween(p, cur.price); else { cancelAnimationFrame(p._raf); p._v = null; p.textContent = 'Цену назовёт менеджер'; }
-    const lim = budget === Infinity ? '' : `Бюджет до ${rub(budget)}. `;
-    box.querySelector('.note').textContent = c.touch ? 'В США от 2899 $, продажи с 6.11.2026. На сайте его пока нет, цену в рублях назовём на день заказа.' : priced ? `${lim}Цена с сайта на ${DATE}, пошлина в цене.` : 'Напишите менеджеру, он назовёт цену на день заказа.';
+    const lim = budget === Infinity ? '' : priced && cur.price > budget ? `На ${rub(cur.price - budget)} выше вашего бюджета. ` : `В бюджете до ${rub(budget)}. `;
+    box.querySelector('.note').textContent = c.touch ? 'В США от 2899 $, продажи с 6.11.2026. На сайте его пока нет, цену в рублях назовём на день заказа.' : priced ? `${lim}Цена с сайта на ${DATE}.` : 'Напишите менеджеру, он назовёт цену на день заказа.';
     const img = box.querySelector('.pic img'), src = `img/${c.pic}${color ? '-' + color[0] : ''}.jpg`;
     if (img.getAttribute('src') !== src) { const pre = new Image(); img.classList.add('swap'); pre.onload = pre.onerror = () => { img.src = src; img.classList.remove('swap'); }; pre.src = src; }
     img.alt = c.name + (color ? ', ' + color[1] : '');
@@ -503,7 +524,7 @@ function drawResult() {
   box.querySelectorAll('.sw button').forEach(b => { b.onclick = () => { color = c.colors.find(x => x[0] === b.dataset.c); paint(); }; });
   const alt = box.querySelector('.alt-row');
   if (alt) alt.onclick = () => { view.main = other; view.other = main; drawResult(); window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion:reduce)').matches ? 'auto' : 'smooth' }); };
-  $('r-foot').textContent = 'Пошлина уже в цене, гарантия 12 месяцев. Менеджер один от запроса до получения. Кофе и зал: Иваново, Зверева, 8, 1 этаж, 107.';
+  $('r-foot').innerHTML = `Кнопка открывает Telegram с готовым текстом. Не открылся? Напишите <a href="https://t.me/${MANAGER}" target="_blank" rel="noopener">@${MANAGER}</a>. Менеджер подтвердит цену и дату, он один от запроса до получения. Кофе и зал: Иваново, Зверева, 8, 1 этаж, 107.`;
   paint();
 }
 function fitPoster() {
