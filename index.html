@@ -465,6 +465,8 @@ function drawResult() {
   const { main, other, n, budget } = view, c = main.c, a = answers, box = $('r-main');
   const family = c.touch ? [] : CONFIGS.filter(x => x.m === c.m);
   let cur = c, color = c.colors ? c.colors[0] : null;
+  // Все цвета заранее, чтобы смена цвета была мгновенной
+  (c.colors || []).forEach(([k]) => { new Image().src = `img/${c.pic}-${k}.jpg`; });
   const row = ([l, v], i) => `<div class="r" style="--i:${i}"><dt>${esc(l)}</dt><dd>${esc(v)}</dd></div>`;
   box.innerHTML = `<div class="band"><p class="tag${main.warn ? ' warn' : ''}">${esc(main.tag)}</p>
   <div class="pic"><img alt=""></div>
