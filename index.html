@@ -9,7 +9,7 @@
 <meta name="theme-color" content="#FFFFFF">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=Unbounded:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=Unbounded:wght@500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style>
 :root{--ink:#04050B;--blue:#1E3BFF;--white:#FFFFFF;--on-white:#0B0D18;--panel:#F4F5F8;--line:rgba(4,5,11,.12);--muted:rgba(11,13,24,.62);--ease:cubic-bezier(.2,.8,.2,1)}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -31,8 +31,16 @@ h1{font:500 clamp(30px,8.5vw,42px)/.98 Unbounded,sans-serif;letter-spacing:-.045
 h2{font:500 clamp(23px,6.2vw,30px)/1.06 Unbounded,sans-serif;letter-spacing:-.04em;color:var(--ink);margin-top:14px}
 h2:focus{outline:none}
 h1,h2,.name{text-wrap:balance}
-.hero{display:block;width:100%;max-width:340px;height:auto;margin:32px auto 28px}
-.lead{margin-top:14px;color:var(--muted);max-width:38ch;font-size:17px}
+.stage{position:relative;flex:1;min-height:270px;margin:22px -20px 18px;background:var(--panel);overflow:hidden;display:flex;align-items:center;justify-content:center}
+.lineup{position:relative;width:100%;max-width:440px;aspect-ratio:390/232}
+.lineup img{position:absolute;display:block;height:auto}
+.l-pro{width:73.3%;left:13.3%;bottom:17%;filter:drop-shadow(0 4px 8px rgba(4,5,11,.10))}
+.l-air{width:54.9%;left:2%;bottom:0;filter:drop-shadow(0 8px 14px rgba(4,5,11,.20))}
+.l-neo{width:52.3%;right:1.5%;bottom:0;filter:drop-shadow(0 8px 14px rgba(4,5,11,.20))}
+.go{display:flex;flex-direction:column;gap:12px}.note-s{color:var(--muted);font-size:13px;line-height:1.4}
+#start h1{margin-top:22px}
+body:has(#start.on) .bar{visibility:hidden}
+.lead{margin-top:10px;color:var(--muted);max-width:38ch;font-size:17px}
 .hint{margin-top:8px;color:var(--muted);font-size:15px}
 .back{align-self:flex-start;background:none;border:0;cursor:pointer;margin:12px 0 0 -8px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:50%;color:var(--muted)}
 .back svg{width:22px;height:22px}.back[hidden]{visibility:hidden;display:flex}
@@ -106,11 +114,14 @@ details[open] summary::after{transform:rotate(-135deg) translate(-2px,-2px)}
 <div class="wrap">
 
 <section class="screen on" id="start">
-  <img class="hero" src="img/hero.jpg" alt="MacBook Pro 14 и 16 дюймов" width="662" height="359">
   <h1>Какой MacBook вам нужен</h1>
   <p class="lead">Несколько вопросов о ваших задачах.</p>
-  <div class="opts"><button class="btn" id="go">Начать</button></div>
-  <p class="foot">Без регистрации, ответы не сохраняем.</p>
+  <div class="stage" role="img" aria-label="MacBook Pro 16, MacBook Air 13 и MacBook Neo"><div class="lineup">
+    <img class="l-pro" src="img/cut-pro16.png" alt="" width="589" height="359">
+    <img class="l-air" src="img/cut-air13-sky.png" alt="" width="509" height="309">
+    <img class="l-neo" src="img/cut-neo-indigo.png" alt="" width="487" height="296">
+  </div></div>
+  <div class="go"><button class="btn" id="go">Начать</button><p class="note-s">Без регистрации, ответы не сохраняем.</p></div>
 </section>
 
 <section class="screen" id="quiz">
