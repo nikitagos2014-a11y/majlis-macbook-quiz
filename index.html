@@ -413,8 +413,8 @@ function reasons(c, a, n) {
     out.push(`Для ваших задач лучше ${want}.`);
   } else if (tasks.length) out.push(`${c.chip} и ${c.ram} ГБ памяти хватит на ${list}.`);
   else if (c.m === 'neo') out.push('Для браузера, фильмов и документов мощности хватает, переплачивать незачем.');
-  if (c.m === 'neo' && ok && (a.use || []).includes('study')) out.push(n.tasks.some(t => t.tier >= 1) ? 'Для учебных проектов хватит. Если они станут тяжелее, посмотрите Air.' : 'Для конспектов, лекций и заданий этого достаточно.');
   else out.push(`${c.chip} и ${c.ram} ГБ памяти хватит на браузер, фильмы и документы с запасом.`);
+  if (c.m === 'neo' && ok && (a.use || []).includes('study')) out.push(n.tasks.some(t => t.tier >= 1) ? 'Если учебные проекты станут тяжелее, посмотрите Air.' : 'Для конспектов, лекций и заданий этого достаточно.');
   if (a.how === 'max' && view && c === view.first) out.push('Самая мощная конфигурация в этом размере из нашего каталога.');
   else if (a.how !== 'need' && ok && c.ram > base.ram) out.push('Память с запасом на годы: потом её не добавить.');
   if (a.place === 'carry' || a.place === 'trips') { if (c.size <= 14) out.push(`${c.size} дюймов удобно брать с собой.`); }
