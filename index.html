@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Какой MacBook вам нужен · MAJLIS</title>
-<meta name="description" content="Несколько вопросов, и в конце конфигурация MacBook под ваши задачи и бюджет, с ценой.">
+<meta name="description" content="Несколько вопросов, и в конце конфигурация MacBook под ваши задачи, с ценой.">
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="preload" href="fonts/unbounded-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
@@ -295,7 +295,6 @@ const TASKS = {
   d3: { t: '3D', icon: 'box', ram: 32, tier: 3, ssd: 1000, why: '3D' },
   ai: { t: 'Нейросети на своём компьютере', icon: 'cpu', ram: 48, tier: 3, ssd: 1000, why: 'нейросети на своём компьютере' },
 };
-const BUDGETS = { b60: 60000, b100: 100000, b130: 130000, b160: 160000, b200: 200000, b350: 350000 };
 
 const Q = [
   { id: 'use', q: 'Для чего вам нужен Mac?', multi: true, hint: 'Можно выбрать несколько', a: [
@@ -322,8 +321,6 @@ const Q = [
   { id: 'years', q: 'На сколько лет берёте?', a: [
     ['short', 'На 2–3 года', 'Хватит того, что нужно сейчас'],
     ['long', 'На 5 лет и больше', 'Возьмём больше памяти, её не добавить потом'] ] },
-  { id: 'budget', q: 'Напоследок: какой у вас бюджет?', skip: 'none', skipText: 'Пока не знаю', a: [
-    ['b60', 'До 60 000 ₽', 'MacBook Neo'], ['b100', 'До 100 000 ₽', 'Neo и Air 13'], ['b130', 'До 130 000 ₽', 'Ещё Air 15 и Pro 14 на M5'], ['b160', 'До 160 000 ₽', 'Ещё Pro 14 на M5 Pro'], ['b200', 'До 200 000 ₽', 'Pro 14 с 48 ГБ памяти'], ['b350', 'До 350 000 ₽', 'Вся линейка, включая M5 Max'] ] },
 ];
 
 const rub = n => n.toLocaleString('ru-RU') + ' ₽';
@@ -364,28 +361,20 @@ function score(c, a) {
 }
 // Подбор: лучший вариант и второй, с подписью, чем второй отличается
 function pick(a) {
-  const n = needs(a), budget = BUDGETS[a.budget] || Infinity, known_ = CONFIGS.filter(known), all = known_.filter(c => !dominated(c, known_)), byScore = l => [...l].sort((x, y) => score(x, a) - score(y, a) || x.price - y.price);
+  const n = needs(a), known_ = CONFIGS.filter(known), all = known_.filter(c => !dominated(c, known_)), byScore = l => [...l].sort((x, y) => score(x, a) - score(y, a) || x.price - y.price);
   if (a.screen === 'touch') {
-    const alt = byScore(all.filter(c => c.tier >= 2 && c.price <= budget && c.ram >= Math.min(n.ram, 24)))[0] || byScore(all.filter(c => c.price <= budget))[0];
-    return { n, budget, top: TOUCH, topTag: 'Лучший вариант', alt, altTag: 'Без сенсора, с понятной ценой', over: false };
+    const alt = byScore(all.filter(c => c.tier >= 2 && c.ram >= Math.min(n.ram, 24)))[0];
+    return { n, top: TOUCH, topTag: 'Лучший вариант', alt, altTag: 'Без сенсора, с понятной ценой' };
   }
   const ok = byScore(all.filter(c => fits(c, n)));
-  const inBudget = ok.filter(c => c.price <= budget);
-  if (!inBudget.length) {
-    // Бюджета не хватает на задачи: показываем лучшее в бюджете и то, что закрывает задачи полностью
-    const under = all.filter(c => c.price <= budget).sort((x, y) => y.tier - x.tier || y.ram - x.ram || y.ssd - x.ssd || x.price - y.price)[0];
-    const full = ok[0] || null;
-    // Ни одна конфигурация каталога не закрывает задачи полностью: честно показываем самую близкую
-    if (!full) return { n, budget, top: under || [...all].sort((x, y) => y.tier - x.tier || y.ram - x.ram)[0], topTag: 'Ближе всего к вашим задачам', topWarn: true, alt: null, over: true };
-    if (!under) return { n, budget, top: full, topTag: `Закрывает задачи, на ${rub(full.price - budget)} выше бюджета`, topWarn: true, alt: null, over: true };
-    return { n, budget, top: under, topTag: 'Лучшее в вашем бюджете', topWarn: true, alt: full, altTag: `Закрывает задачи полностью, на ${rub(full.price - budget)} выше бюджета`, over: true };
-  }
-  const top = inBudget[0];
-  // Второй: сначала другая модель в бюджете, иначе больше памяти или места, иначе вариант дешевле
-  const others = inBudget.filter(c => c !== top);
-  const alt = others.find(c => c.m !== top.m && c.size !== top.size) || others.find(c => c.m !== top.m) || others.find(c => c.m === top.m)
-    || ok.find(c => c !== top) || all.filter(c => c.price < top.price).sort((x, y) => y.price - x.price)[0] || null;
-  return { n, budget, top, topTag: 'Лучший вариант', alt, altTag: alt ? diff(alt, top) : '', over: false };
+  // Ни одна конфигурация каталога не закрывает задачи полностью: честно показываем самую близкую
+  if (!ok.length) return { n, top: [...all].sort((x, y) => y.tier - x.tier || y.ram - x.ram || y.ssd - x.ssd)[0], topTag: 'Ближе всего к вашим задачам', topWarn: true, alt: null };
+  const top = ok[0];
+  // Второй: другая модель не дороже чем на 40%, иначе ближайший вариант дешевле, иначе следующий подходящий
+  const others = ok.filter(c => c !== top), close = others.filter(c => c.price <= top.price * 1.4);
+  const alt = close.find(c => c.m !== top.m && c.size !== top.size) || close.find(c => c.m !== top.m) || close[0]
+    || all.filter(c => c.price < top.price).sort((x, y) => y.price - x.price)[0] || others[0] || null;
+  return { n, top, topTag: 'Лучший вариант', alt, altTag: alt ? diff(alt, top) : '' };
 }
 function diff(c, top) {
   if (c.price > top.price) {
@@ -470,7 +459,7 @@ function next() {
 function finish() {
   $('bar').style.width = '100%'; $('step').textContent = '';
   show('finding');
-  const still = matchMedia('(prefers-reduced-motion:reduce)').matches, words = ['память', 'накопитель', 'экран', 'бюджет'];
+  const still = matchMedia('(prefers-reduced-motion:reduce)').matches, words = ['задачи', 'память', 'накопитель', 'экран'];
   if (still) return renderResult();
   words.forEach((w, i) => setTimeout(() => { const r = $('roll'); r.textContent = w; r.classList.remove('w'); void r.offsetWidth; r.classList.add('w'); r.style.setProperty('--i', 0); }, i * 190));
   setTimeout(renderResult, words.length * 190 + 60);
@@ -478,12 +467,12 @@ function finish() {
 let view = null;
 function renderResult() {
   const r = pick(answers);
-  view = { main: { c: r.top, tag: r.topTag, warn: r.topWarn }, other: r.alt ? { c: r.alt, tag: r.altTag } : null, n: r.n, budget: r.budget };
+  view = { main: { c: r.top, tag: r.topTag, warn: r.topWarn }, other: r.alt ? { c: r.alt, tag: r.altTag } : null, n: r.n };
   drawResult(); show('result'); $('r-title').focus({ preventScroll: true });
 }
 const specRows = c => c.touch ? [['Экран', 'PROLED XDR, сенсорный'], ['Размер', '14 или 16 дюймов'], ['Чип', 'M5 Pro или M5 Max']] : [['Чип', c.chip], ['Память', c.ram + ' ГБ'], ['Накопитель', gb(c.ssd)]];
 function drawResult() {
-  const { main, other, n, budget } = view, c = main.c, a = answers, box = $('r-main');
+  const { main, other, n } = view, c = main.c, a = answers, box = $('r-main');
   const family = c.touch ? [] : CONFIGS.filter(x => x.name === c.name);
   let cur = c, color = c.colors ? c.colors[0] : null;
   // Все цвета заранее, чтобы смена цвета была мгновенной
@@ -511,8 +500,7 @@ function drawResult() {
     const site = box.querySelector('.site'); if (site && cur.slug) site.href = SITE + cur.slug;
     const p = box.querySelector('.price'); p.classList.toggle('ask', !priced);
     if (priced) tween(p, cur.price); else { cancelAnimationFrame(p._raf); p._v = null; p.textContent = 'Цену назовёт менеджер'; }
-    const lim = budget === Infinity ? '' : priced && cur.price > budget ? `На ${rub(cur.price - budget)} выше вашего бюджета. ` : `В бюджете до ${rub(budget)}. `;
-    box.querySelector('.note').textContent = c.touch ? 'В США от 2899 $, продажи с 6.11.2026. На сайте его пока нет, цену в рублях назовём на день заказа.' : priced ? `${lim}Цена с сайта на ${DATE}.` : 'Напишите менеджеру, он назовёт цену на день заказа.';
+    box.querySelector('.note').textContent = c.touch ? 'В США от 2899 $, продажи с 6.11.2026. На сайте его пока нет, цену в рублях назовём на день заказа.' : priced ? `Цена с сайта на ${DATE}.` : 'Напишите менеджеру, он назовёт цену на день заказа.';
     const img = box.querySelector('.pic img'), src = `img/${c.pic}${color ? '-' + color[0] : ''}.jpg`;
     if (img.getAttribute('src') !== src) { const pre = new Image(); img.classList.add('swap'); pre.onload = pre.onerror = () => { img.src = src; img.classList.remove('swap'); }; pre.src = src; }
     img.alt = c.name + (color ? ', ' + color[1] : '');
