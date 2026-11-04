@@ -386,7 +386,8 @@ function neighbours(c, a) {
   const low = fit || [...below].sort((x, y) => y.price - x.price)[0];
   if (low) out.push({ c: low, tag: `Дешевле на ${rub(c.price - low.price)}${fit ? ', задачам хватит' : ', но памяти или места меньше'}` });
   const above = all.filter(q => q.price > c.price && q.price <= c.price * 1.4 && (q.tier > c.tier || q.ram > c.ram || q.ssd > c.ssd)).sort((x, y) => (x.size === c.size ? 0 : 1) - (y.size === c.size ? 0 : 1) || x.price - y.price);
-  if (above[0]) out.push({ c: above[0], tag: diff(above[0], c) });
+  // У самого мощного варианта шага вверх не показываем: подпись и предложение спорили бы
+  if (above[0] && !(a.how === 'max' && view && c === view.first)) out.push({ c: above[0], tag: diff(above[0], c) });
   return out;
 }
 function diff(c, top) {
