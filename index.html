@@ -343,7 +343,9 @@ const dominated = (c, l) => l.some(d => d !== c && d.price <= c.price && d.tier 
 function needs(a) {
   const picked = (a.tasks || []).map(k => TASKS[k]);
   const n = { ram: 8, tier: 0, ssd: 256, tasks: picked };
-  for (const t of picked) { n.ram = Math.max(n.ram, t.ram); n.tier = Math.max(n.tier, t.tier); n.ssd = Math.max(n.ssd, t.ssd); }
+  // Только учёба: код, дизайн, фото и музыка в учебном объёме не требуют 16 ГБ. Работа или творчество рядом возвращают обычную планку
+  const light = (a.use || []).includes('study') && !(a.use || []).some(u => u === 'work' || u === 'create');
+  for (const t of picked) { const easy = light && t.tier <= 1; n.ram = Math.max(n.ram, easy ? 8 : t.ram); n.tier = Math.max(n.tier, easy ? 0 : t.tier); n.ssd = Math.max(n.ssd, easy ? 256 : t.ssd); }
   const sizes = { s: 256, m: 512, l: 1000, xl: 2000 };
   if (sizes[a.files]) n.ssd = a.files === 's' ? Math.max(256, picked.length ? n.ssd : 256) : sizes[a.files];
   // С запасом Neo не советуем: память в нём 8 ГБ и её не добавить
@@ -357,7 +359,7 @@ function score(c, a) {
   let s = c.price;
   const wantsSmall = a.screen === 'small' || (a.screen !== 'big' && (a.place === 'carry' || a.place === 'trips'));
   if (wantsSmall && c.size >= 15) s += 40000;
-  if (a.screen === 'big' && c.size < 15) s += 60000;
+  if (a.screen === 'big' && c.size < 15) s += 80000;
   if (a.place === 'home' && a.screen !== 'small' && a.screen !== 'big' && c.size >= 15) s -= 12000;
   if ((a.place === 'carry' || a.place === 'trips') && c.tier >= 2 && a.screen !== 'best') s += 15000;
   return s;
@@ -411,6 +413,7 @@ function reasons(c, a, n) {
     out.push(`Для ваших задач лучше ${want}.`);
   } else if (tasks.length) out.push(`${c.chip} и ${c.ram} ГБ памяти хватит на ${list}.`);
   else if (c.m === 'neo') out.push('Для браузера, фильмов и документов мощности хватает, переплачивать незачем.');
+  if (c.m === 'neo' && ok && (a.use || []).includes('study')) out.push(n.tasks.some(t => t.tier >= 1) ? 'Для учебных проектов хватит. Если они станут тяжелее, посмотрите Air.' : 'Для конспектов, лекций и заданий этого достаточно.');
   else out.push(`${c.chip} и ${c.ram} ГБ памяти хватит на браузер, фильмы и документы с запасом.`);
   if (a.how === 'max' && view && c === view.first) out.push('Самая мощная конфигурация в этом размере из нашего каталога.');
   else if (a.how !== 'need' && ok && c.ram > base.ram) out.push('Память с запасом на годы: потом её не добавить.');
