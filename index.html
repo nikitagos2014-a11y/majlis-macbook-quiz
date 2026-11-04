@@ -107,7 +107,7 @@ body:has(#result.on) .bar,body:has(#finding.on) .step{display:none}
 .info .cfgs{margin-top:12px}
 .site{align-self:flex-start;margin-top:16px}
 .alt-row{display:flex;align-items:center;gap:12px;width:100%;margin-top:24px;padding:12px;text-align:left;background:var(--panel);border:0;border-radius:16px;cursor:pointer;transition:transform .16s var(--ease)}
-.alt-row:active{transform:scale(.985)}
+.alt-row:active{transform:scale(.985)}.alt-row+.alt-row{margin-top:8px}
 .alt-row{isolation:isolate}.alt-pic{flex:none;width:68px;height:44px;display:flex;align-items:center;justify-content:center;mix-blend-mode:multiply}
 .alt-pic img{max-width:100%;max-height:100%}
 .alt-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;font-size:13px;line-height:1.3;color:var(--muted)}
@@ -303,6 +303,11 @@ const Q = [
     ['work', 'Работа', 'То, на чём зарабатываете', 'briefcase'],
     ['create', 'Творчество', 'Для себя, вне работы', 'palette'] ] },
   { id: 'tasks', q: 'Что именно будете делать?', multi: true, hint: 'Можно выбрать несколько', when: a => !a.use || !a.use.length || a.use.some(u => u !== 'daily'), a: Object.entries(TASKS).map(([k, v]) => [k, v.t, '', v.icon]) },
+  // Ценовой сегмент без вопроса про деньги: задачи остаются нижней границей, ответ только поднимает конфигурацию
+  { id: 'how', q: 'Как вы выбираете технику?', a: [
+    ['need', 'Беру то, что нужно', 'Не платить за лишнее'],
+    ['stock', 'Беру с запасом', 'Чтобы хватило на несколько лет'],
+    ['max', 'Беру самое мощное', 'Чтобы ни во что не упираться'] ] },
   { id: 'place', q: 'Где он будет чаще всего?', a: [
     ['desk', 'На столе', 'Одно место, можно с монитором', 'monitor'],
     ['home', 'По всей квартире', 'Диван, кухня, стол', 'sofa'],
@@ -318,15 +323,13 @@ const Q = [
     ['m', 'Средне', 'Фото, рабочие проекты, программы'],
     ['l', 'Много', 'Видео, большие библиотеки, 1 ТБ'],
     ['xl', 'Очень много', 'Исходники и архивы, 2 ТБ'] ] },
-  { id: 'years', q: 'На сколько лет берёте?', a: [
-    ['short', 'На 2–3 года', 'Хватит того, что нужно сейчас'],
-    ['long', 'На 5 лет и больше', 'Возьмём больше памяти, её не добавить потом'] ] },
 ];
 
 const rub = n => n.toLocaleString('ru-RU') + ' ₽';
 const gb = n => n >= 1000 ? n / 1000 + ' ТБ' : n + ' ГБ';
 const RAM_STEP = [8, 16, 24, 32, 36, 48, 64];
 const known = c => c.price != null;
+const HOW = { need: 'то, что нужно', stock: 'с запасом', max: 'самое мощное' };
 // Цена докручивается до нового значения, прерывается новым выбором
 function tween(el, to) {
   const from = el._v == null ? Math.round(to * .82) : el._v, t0 = performance.now(), dur = matchMedia('(prefers-reduced-motion:reduce)').matches ? 0 : 420;
@@ -343,8 +346,8 @@ function needs(a) {
   for (const t of picked) { n.ram = Math.max(n.ram, t.ram); n.tier = Math.max(n.tier, t.tier); n.ssd = Math.max(n.ssd, t.ssd); }
   const sizes = { s: 256, m: 512, l: 1000, xl: 2000 };
   if (sizes[a.files]) n.ssd = a.files === 's' ? Math.max(256, picked.length ? n.ssd : 256) : sizes[a.files];
-  // На 5 лет Neo не советуем: память в нём 8 ГБ и её не добавить
-  if (a.years === 'long') { n.ram = RAM_STEP[Math.min(RAM_STEP.indexOf(n.ram) + 1, RAM_STEP.length - 1)]; n.tier = Math.max(n.tier, 1); }
+  // С запасом Neo не советуем: память в нём 8 ГБ и её не добавить
+  if (a.how === 'stock' || a.how === 'max') { n.ram = RAM_STEP[Math.min(RAM_STEP.indexOf(n.ram) + 1, RAM_STEP.length - 1)]; n.tier = Math.max(n.tier, 1); }
   if (a.screen === 'best') n.tier = Math.max(n.tier, 2);
   return n;
 }
@@ -360,21 +363,31 @@ function score(c, a) {
   return s;
 }
 // Подбор: лучший вариант и второй, с подписью, чем второй отличается
+const catalog = () => { const k = CONFIGS.filter(known); return k.filter(c => !dominated(c, k)); };
+const scored = a => l => [...l].sort((x, y) => score(x, a) - score(y, a) || x.price - y.price);
 function pick(a) {
-  const n = needs(a), known_ = CONFIGS.filter(known), all = known_.filter(c => !dominated(c, known_)), byScore = l => [...l].sort((x, y) => score(x, a) - score(y, a) || x.price - y.price);
-  if (a.screen === 'touch') {
-    const alt = byScore(all.filter(c => c.tier >= 2 && c.ram >= Math.min(n.ram, 24)))[0];
-    return { n, top: TOUCH, topTag: 'Лучший вариант', alt, altTag: 'Без сенсора, с понятной ценой' };
-  }
+  const n = needs(a), all = catalog(), byScore = scored(a);
+  if (a.screen === 'touch') return { n, top: TOUCH, topTag: 'Лучший вариант' };
   const ok = byScore(all.filter(c => fits(c, n)));
   // Ни одна конфигурация каталога не закрывает задачи полностью: честно показываем самую близкую
-  if (!ok.length) return { n, top: [...all].sort((x, y) => y.tier - x.tier || y.ram - x.ram || y.ssd - x.ssd)[0], topTag: 'Ближе всего к вашим задачам', topWarn: true, alt: null };
-  const top = ok[0];
-  // Второй: другая модель не дороже чем на 40%, иначе ближайший вариант дешевле, иначе следующий подходящий
-  const others = ok.filter(c => c !== top), close = others.filter(c => c.price <= top.price * 1.4);
-  const alt = close.find(c => c.m !== top.m && c.size !== top.size) || close.find(c => c.m !== top.m) || close[0]
-    || all.filter(c => c.price < top.price).sort((x, y) => y.price - x.price)[0] || others[0] || null;
-  return { n, top, topTag: 'Лучший вариант', alt, altTag: alt ? diff(alt, top) : '' };
+  if (!ok.length) return { n, top: [...all].sort((x, y) => y.tier - x.tier || y.ram - x.ram || y.ssd - x.ssd)[0], topTag: 'Ближе всего к вашим задачам', topWarn: true };
+  if (a.how === 'max') {
+    const small = a.screen === 'small' || (a.screen !== 'big' && (a.place === 'carry' || a.place === 'trips'));
+    const pool = ok.filter(c => a.screen === 'big' ? c.size >= 15 : small ? c.size <= 14 : true);
+    return { n, top: [...(pool.length ? pool : ok)].sort((x, y) => y.tier - x.tier || y.ram - x.ram || y.ssd - x.ssd)[0], topTag: 'Самый мощный вариант' };
+  }
+  return { n, top: ok[0], topTag: 'Лучший вариант' };
+}
+// Рядом с главным всегда выход дешевле и шаг с запасом: высокая цена никого не отсекает, а выбор виден менеджеру
+function neighbours(c, a) {
+  const all = catalog(), byScore = scored(a), base = needs({ ...a, how: 'need' }), out = [];
+  if (c.touch) { const x = byScore(all.filter(q => q.tier >= 2 && q.ram >= Math.min(base.ram, 24)))[0]; return x ? [{ c: x, tag: 'Без сенсора, с понятной ценой' }] : []; }
+  const below = all.filter(q => q.price < c.price), fit = byScore(below.filter(q => fits(q, base)))[0];
+  const low = fit || [...below].sort((x, y) => y.price - x.price)[0];
+  if (low) out.push({ c: low, tag: `Дешевле на ${rub(c.price - low.price)}${fit ? ', задачам хватит' : ', но памяти или места меньше'}` });
+  const above = all.filter(q => q.price > c.price && q.price <= c.price * 1.4 && (q.tier > c.tier || q.ram > c.ram || q.ssd > c.ssd)).sort((x, y) => (x.size === c.size ? 0 : 1) - (y.size === c.size ? 0 : 1) || x.price - y.price);
+  if (above[0]) out.push({ c: above[0], tag: diff(above[0], c) });
+  return out;
 }
 function diff(c, top) {
   if (c.price > top.price) {
@@ -390,19 +403,20 @@ function diff(c, top) {
 // Почему подходит: только то, что следует из ответов
 function reasons(c, a, n) {
   if (c.touch) return ['Вы выбрали сенсорный экран: пока он есть только в этом MacBook Pro.', 'Экран PROLED XDR, 14 или 16 дюймов.'];
-  const out = [], tasks = n.tasks.map(t => t.why), ok = fits(c, n);
+  const base = needs({ ...a, how: 'need' }), out = [], tasks = n.tasks.map(t => t.why), ok = fits(c, base);
   const list = tasks.length > 1 ? `${tasks.slice(0, 2).join(', ')} и ${tasks[2] || ''}`.replace(/ и $/, '').replace(/, ([^,]+)$/, ' и $1') : tasks[0];
   if (!ok) {
-    const want = [c.ram < n.ram ? `от ${n.ram} ГБ памяти` : '', c.ssd < n.ssd ? `от ${gb(n.ssd)} места` : '', c.tier < n.tier ? 'чип мощнее' : ''].filter(Boolean).join(' и ');
+    const want = [c.ram < base.ram ? `от ${base.ram} ГБ памяти` : '', c.ssd < base.ssd ? `от ${gb(base.ssd)} места` : '', c.tier < base.tier ? 'чип мощнее' : ''].filter(Boolean).join(' и ');
     out.push(`Для ваших задач лучше ${want}.`);
   } else if (tasks.length) out.push(`${c.chip} и ${c.ram} ГБ памяти хватит на ${list}.`);
   else if (c.m === 'neo') out.push('Для браузера, фильмов и документов мощности хватает, переплачивать незачем.');
   else out.push(`${c.chip} и ${c.ram} ГБ памяти хватит на браузер, фильмы и документы с запасом.`);
-  if (a.years === 'long' && ok) out.push(`Память с запасом на годы: потом её не добавить.`);
+  if (a.how === 'max' && view && c === view.first) out.push('Самая мощная конфигурация в этом размере из нашего каталога.');
+  else if (a.how !== 'need' && ok && c.ram > base.ram) out.push('Память с запасом на годы: потом её не добавить.');
   if (a.place === 'carry' || a.place === 'trips') { if (c.size <= 14) out.push(`${c.size} дюймов удобно брать с собой.`); }
   else if (a.screen === 'big' && c.size >= 15) out.push(`${c.size} дюймов: два окна рядом без тесноты.`);
   else if (a.screen === 'best' && c.tier >= 2) out.push('Экран класса Pro: ярче и точнее по цвету.');
-  if (out.length < 3 && (a.files === 'l' || a.files === 'xl') && c.ssd >= n.ssd) out.push(`${gb(c.ssd)} вмещают ваши файлы без внешнего диска.`);
+  if (out.length < 3 && (a.files === 'l' || a.files === 'xl') && c.ssd >= base.ssd) out.push(`${gb(c.ssd)} вмещают ваши файлы без внешнего диска.`);
   if (out.length < 2 && c.tier === 1) out.push('Без вентилятора, работает бесшумно.');
   return out.slice(0, 3);
 }
@@ -467,12 +481,12 @@ function finish() {
 let view = null;
 function renderResult() {
   const r = pick(answers);
-  view = { main: { c: r.top, tag: r.topTag, warn: r.topWarn }, other: r.alt ? { c: r.alt, tag: r.altTag } : null, n: r.n };
+  view = { first: r.top, main: { c: r.top, tag: r.topTag, warn: r.topWarn }, n: r.n };
   drawResult(); show('result'); $('r-title').focus({ preventScroll: true });
 }
 const specRows = c => c.touch ? [['Экран', 'PROLED XDR, сенсорный'], ['Размер', '14 или 16 дюймов'], ['Чип', 'M5 Pro или M5 Max']] : [['Чип', c.chip], ['Память', c.ram + ' ГБ'], ['Накопитель', gb(c.ssd)]];
 function drawResult() {
-  const { main, other, n } = view, c = main.c, a = answers, box = $('r-main');
+  const { main, n } = view, c = main.c, rows = neighbours(c, answers), base = needs({ ...answers, how: 'need' }), a = answers, box = $('r-main');
   const family = c.touch ? [] : CONFIGS.filter(x => x.name === c.name);
   let cur = c, color = c.colors ? c.colors[0] : null;
   // Все цвета заранее, чтобы смена цвета была мгновенной
@@ -489,14 +503,14 @@ function drawResult() {
   ${c.touch ? '' : `<p class="eta-n">Если заказать сегодня: ${DELIVERY_WORKDAYS} рабочих дней до Москвы, дальше СДЭК до вашего города. Точную дату назовёт менеджер.</p>`}
   ${family.length > 1 ? `<details><summary>Другая память и накопитель</summary><div class="cfgs">${family.map(f => `<button type="button" class="cfg"><span>${family.some(x => x.chip !== f.chip) ? esc(f.chip) + ' · ' : ''}${f.ram} ГБ / ${gb(f.ssd)}${f === c ? '<em>Рекомендуем</em>' : ''}</span><b>${f.price != null ? rub(f.price) : 'у менеджера'}</b></button>`).join('')}</div></details>` : ''}
   ${c.slug ? `<a class="site" target="_blank" rel="noopener">Посмотреть на сайте</a>` : ''}
-  ${other ? `<button type="button" class="alt-row"><span class="alt-pic"><img src="img/${other.c.pic}${other.c.colors ? '-' + other.c.colors[0][0] : ''}.jpg" alt=""></span><span class="alt-t"><small>${esc(other.tag)}</small><b>${esc(other.c.name)}</b><span>${other.c.touch ? 'Сенсорный экран' : `${esc(other.c.chip)}, ${other.c.ram} ГБ, ${gb(other.c.ssd)}`}</span></span><b class="alt-p">${other.c.price != null ? rub(other.c.price) : 'у менеджера'}</b><svg class="alt-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>` : ''}
+  ${rows.map(o => `<button type="button" class="alt-row"><span class="alt-pic"><img src="img/${o.c.pic}${o.c.colors ? '-' + o.c.colors[0][0] : ''}.jpg" alt=""></span><span class="alt-t"><small>${esc(o.tag)}</small><b>${esc(o.c.name)}</b><span>${esc(o.c.chip)}, ${o.c.ram} ГБ, ${gb(o.c.ssd)}</span></span><b class="alt-p">${rub(o.c.price)}</b><svg class="alt-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>`).join('')}
 </div>`;
   const paint = () => {
     const priced = cur.price != null;
     const eta = cur.touch ? [] : [['В Москве', 'примерно к ' + etaText()]];
     box.querySelector('.rows').innerHTML = [...specRows(cur), ['Гарантия', '12 месяцев'], ...(cur.touch ? [] : [['Пошлина', 'уже в цене']]), ...eta].map(row).join('');
     box.querySelector('.why-l').innerHTML = reasons(cur, a, n).map(r => `<li>${esc(r)}</li>`).join('');
-    const tag = box.querySelector('.band .tag'), under = !cur.touch && !fits(cur, n); tag.textContent = cur === c ? main.tag : under ? 'Ваш выбор, памяти или места мало для задач' : 'Ваш выбор'; tag.classList.toggle('warn', cur === c ? !!main.warn : under);
+    const tag = box.querySelector('.band .tag'), under = !cur.touch && !fits(cur, base); tag.textContent = cur === c ? main.tag : under ? 'Ваш выбор, памяти или места мало для задач' : 'Ваш выбор'; tag.classList.toggle('warn', cur === c ? !!main.warn : under);
     const site = box.querySelector('.site'); if (site && cur.slug) site.href = SITE + cur.slug;
     const p = box.querySelector('.price'); p.classList.toggle('ask', !priced);
     if (priced) tween(p, cur.price); else { cancelAnimationFrame(p._raf); p._v = null; p.textContent = 'Цену назовёт менеджер'; }
@@ -506,7 +520,7 @@ function drawResult() {
     img.alt = c.name + (color ? ', ' + color[1] : '');
     const spec = cur.touch ? 'сенсорный экран' : `${cur.chip}, ${cur.ram} ГБ памяти, ${gb(cur.ssd)}`;
     const line = `${c.name}, ${spec}${color ? ', ' + color[1] : ''}${priced ? ', ' + rub(cur.price) : ''}`;
-    document.querySelector('.r-bar .cta').href = `https://t.me/${MANAGER}?text=${encodeURIComponent('Здравствуйте. Подбор из теста: ' + line + '.')}`;
+    document.querySelector('.r-bar .cta').href = `https://t.me/${MANAGER}?text=${encodeURIComponent('Здравствуйте. Подбор из теста: ' + line + '. Подход: ' + HOW[answers.how] + '.')}`;
     $('r-bar-price').textContent = priced ? rub(cur.price) : '';
     box.querySelectorAll('.cfg').forEach((b, i) => { const on = family[i] === cur; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
     box.querySelectorAll('.sw button').forEach(b => { const on = color && b.dataset.c === color[0]; b.classList.toggle('on', on); b.setAttribute('aria-pressed', !!on); });
@@ -514,8 +528,7 @@ function drawResult() {
   };
   box.querySelectorAll('.cfg').forEach((b, i) => { b.onclick = () => { cur = family[i]; paint(); }; });
   box.querySelectorAll('.sw button').forEach(b => { b.onclick = () => { color = c.colors.find(x => x[0] === b.dataset.c); paint(); }; });
-  const alt = box.querySelector('.alt-row');
-  if (alt) alt.onclick = () => { view.main = other; view.other = main; drawResult(); window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion:reduce)').matches ? 'auto' : 'smooth' }); };
+  box.querySelectorAll('.alt-row').forEach((b, i) => { b.onclick = () => { const o = rows[i]; view.main = o.c === view.first ? { c: o.c, tag: 'Лучший вариант' } : { c: o.c, tag: 'Другой вариант' }; drawResult(); window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion:reduce)').matches ? 'auto' : 'smooth' }); }; });
   $('r-foot').innerHTML = `Кнопка открывает Telegram с готовым текстом. Не открылся? Напишите <a href="https://t.me/${MANAGER}" target="_blank" rel="noopener">@${MANAGER}</a>. Менеджер подтвердит цену и дату, он один от запроса до получения. Кофе и зал: Иваново, Зверева, 8, 1 этаж, 107.`;
   paint();
 }
